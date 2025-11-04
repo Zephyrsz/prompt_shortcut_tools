@@ -1,0 +1,1 @@
+1. the tag related function doesn't work, both when add prompt choose the tag, or edit the exist prompt,please check the realted function that the data could be stored or modified in related table.

@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./prompts.db"
+}
+
+model Prompt {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  promptText  String
+  tags        String   // JSON string array
+  usageNotes  String?
+  isFavorite  Boolean  @default(false)
+  isTemplate  Boolean  @default(false)  // Mark as template
+  templateVars String? // JSON string array of template variables
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  color String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
