@@ -154,11 +154,7 @@ export default function PromptDetail({ params }: Props) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...updatedPrompt,
-          tags: JSON.stringify(updatedPrompt.tags),
-          templateVars: updatedPrompt.templateVars ? JSON.stringify(updatedPrompt.templateVars) : null,
-        }),
+        body: JSON.stringify(updatedPrompt),
       });
 
       if (response.ok) {

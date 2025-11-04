@@ -201,10 +201,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...promptData,
-          tags: JSON.stringify(promptData.tags)
-        }),
+        body: JSON.stringify(promptData),
       });
 
       if (response.ok) {

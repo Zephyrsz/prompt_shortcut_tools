@@ -104,11 +104,7 @@ Please provide the SQL query and explain the logic.`);
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...newTemplateData,
-            tags: JSON.stringify(newTemplateData.tags),
-            templateVars: JSON.stringify(newTemplateData.templateVars),
-          }),
+          body: JSON.stringify(newTemplateData),
         });
 
         if (!response.ok) {

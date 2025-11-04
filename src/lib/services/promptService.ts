@@ -81,6 +81,39 @@ export const promptService = {
       }
     }
 
+    // Ensure tags is an array if provided
+    if (data.tags !== undefined) {
+      let tags = data.tags;
+      if (typeof tags === 'string') {
+        try {
+          tags = JSON.parse(tags);
+        } catch {
+          tags = [];
+        }
+      }
+      // Ensure it's an array
+      if (!Array.isArray(tags)) {
+        tags = [];
+      }
+      data.tags = tags;
+    }
+
+    // Ensure templateVars is an array if provided
+    if (data.templateVars !== undefined && data.templateVars !== null) {
+      let templateVars = data.templateVars;
+      if (typeof templateVars === 'string') {
+        try {
+          templateVars = JSON.parse(templateVars);
+        } catch {
+          templateVars = [];
+        }
+      }
+      if (!Array.isArray(templateVars)) {
+        templateVars = [];
+      }
+      data.templateVars = templateVars;
+    }
+
     return promptRepository.update(id, data);
   },
 
