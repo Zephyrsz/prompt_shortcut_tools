@@ -30,7 +30,7 @@ Please provide the SQL query and explain the logic.`);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<Array<{ id: number; name: string; color: string }>>([]);
   const [selectedTag, setSelectedTag] = useState('');
 
   const variables = extractVariables(template);
@@ -40,14 +40,18 @@ Please provide the SQL query and explain the logic.`);
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all prompts to get tags and templates
-        const response = await fetch('/api/prompts');
-        const prompts = await response.json();
-        
-        // Extract tags from all prompts
-        const allTags = prompts.flatMap((p: any) => p.tags || []);
-        const uniqueTags = [...new Set(allTags)] as string[];
-        setAvailableTags(uniqueTags);
+        // Fetch tags from database (same as main page)
+        const tagsResponse = await fetch('/api/tags');
+        if (tagsResponse.ok) {
+          const dbTags = await tagsResponse.json();
+          if (Array.isArray(dbTags)) {
+            setAvailableTags(dbTags);
+          }
+        }
+
+        // Fetch all prompts to get templates
+        const promptsResponse = await fetch('/api/prompts');
+        const prompts = await promptsResponse.json();
         
         // Filter and set templates (prompts with isTemplate: true)
         const templates = prompts
@@ -392,8 +396,8 @@ Please provide the SQL query and explain the logic.`);
                     >
                       <option value="">Select a tag</option>
                       {availableTags.map(tag => (
-                        <option key={tag} value={tag}>
-                          {tag}
+                        <option key={tag.id} value={tag.name}>
+                          {tag.name}
                         </option>
                       ))}
                     </select>

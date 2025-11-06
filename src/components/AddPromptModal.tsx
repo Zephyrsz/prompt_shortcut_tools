@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -55,9 +55,9 @@ const AddPromptModal: React.FC<AddPromptModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedTag, setSelectedTag] = useState('');
 
-  // Extract variables from prompt text
-  const variables = extractVariables(formData.promptText);
-  const isTemplate = hasVariables(formData.promptText);
+  // Extract variables from prompt text - memoized to prevent infinite loops
+  const variables = useMemo(() => extractVariables(formData.promptText), [formData.promptText]);
+  const isTemplate = useMemo(() => hasVariables(formData.promptText), [formData.promptText]);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -76,17 +76,27 @@ const AddPromptModal: React.FC<AddPromptModalProps> = ({
   }, [isOpen]);
 
   // Update template values when variables change
+  // Use JSON.stringify to create a stable dependency since variables array changes reference on every render
+  const variablesKey = useMemo(() => JSON.stringify([...variables].sort()), [variables]);
+  
   useEffect(() => {
-    if (isTemplate) {
-      const newValues: Record<string, string> = {};
-      variables.forEach(variable => {
-        if (!(variable in templateValues)) {
-          newValues[variable] = '';
-        }
+    if (isTemplate && variables.length > 0) {
+      setTemplateValues(prev => {
+        const newValues: Record<string, string> = {};
+        let hasNewVariables = false;
+        
+        variables.forEach(variable => {
+          if (!(variable in prev)) {
+            newValues[variable] = '';
+            hasNewVariables = true;
+          }
+        });
+        
+        // Only update state if there are actually new variables
+        return hasNewVariables ? { ...prev, ...newValues } : prev;
       });
-      setTemplateValues(prev => ({ ...prev, ...newValues }));
     }
-  }, [variables, isTemplate]);
+  }, [variablesKey, isTemplate]);
 
   const handleInputChange = (field: keyof PromptFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));

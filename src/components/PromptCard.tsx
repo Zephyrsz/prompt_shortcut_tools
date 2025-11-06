@@ -61,13 +61,15 @@ export default function PromptCard({ prompt, onCopy, onToggleFavorite, onDeleteT
     setShowDeleteConfirm(false);
     setTagToDelete('');
   };
+
   return (
     <>
-    <Card className="bg-gray-50 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
+    <Card className="bg-gray-50 border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+      {/* Title Section - Fixed Height */}
+      <CardHeader className={`pb-3 flex-shrink-0 ${prompt.isTemplate ? 'h-[88px]' : 'h-[64px]'}`}>
         {/* Template badge at top-left */}
         {prompt.isTemplate && (
-          <div className="mb-2">
+          <div className="mb-2 h-[24px]">
             <Badge variant="outline" className="text-xs px-2 py-1 bg-blue-50 text-blue-700 border-blue-200">
               <FileText className="h-3 w-3 mr-1" />
               Template
@@ -75,15 +77,15 @@ export default function PromptCard({ prompt, onCopy, onToggleFavorite, onDeleteT
           </div>
         )}
         
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between h-[40px]">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <Link href={`/prompt/${prompt.id}`}>
-              <CardTitle className="text-lg font-semibold text-black hover:text-teal-600 cursor-pointer">
+              <CardTitle className="text-lg font-semibold text-black hover:text-teal-600 cursor-pointer truncate">
                 {prompt.title}
               </CardTitle>
             </Link>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -108,24 +110,28 @@ export default function PromptCard({ prompt, onCopy, onToggleFavorite, onDeleteT
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-start gap-2 mb-3">
+      
+      <CardContent className="pt-0 flex flex-col flex-1 min-h-0">
+        {/* Description Section - Fixed Height */}
+        <div className="flex items-start gap-2 mb-3 h-[48px] flex-shrink-0">
           {!prompt.isTemplate && prompt.tags.length > 0 && (
             <div className={`w-4 h-4 ${firstTagColor} rounded-full flex-shrink-0 mt-0.5`} />
           )}
-          <p className="text-sm text-gray-600 leading-relaxed">
-            {prompt.description}
+          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 flex-1">
+            {prompt.description || '\u00A0'}
           </p>
         </div>
         
-        <div className="space-y-2">
-          <div className="bg-white p-3 rounded border border-gray-200">
-            <p className="text-sm text-gray-800 leading-relaxed">
+        <div className="space-y-2 flex flex-col flex-1 min-h-0">
+          {/* Content Box - Fixed Height */}
+          <div className="bg-white p-3 rounded border border-gray-200 h-[180px] flex-shrink-0 overflow-hidden">
+            <p className="text-sm text-gray-800 leading-relaxed line-clamp-6 h-full overflow-hidden">
               {prompt.promptText}
             </p>
           </div>
           
-          <div className="flex flex-wrap gap-1">
+          {/* Tags Section - Fixed Height */}
+          <div className="flex flex-wrap gap-1 h-[32px] flex-shrink-0 items-center">
             {prompt.tags.map((tag) => (
               <Badge
                 key={tag}

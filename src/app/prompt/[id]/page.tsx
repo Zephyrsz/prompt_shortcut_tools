@@ -8,8 +8,10 @@ import { Copy, ArrowLeft, Heart, X, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import CopyButton from '@/components/CopyButton';
 import EditPromptModal from '@/components/EditPromptModal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
+import { extractVariables, renderPrompt, hasVariables, isTemplateComplete, getMissingVariables } from '@/utils/templateUtils';
+import { Input } from '@/components/ui/input';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -37,6 +39,7 @@ export default function PromptDetail({ params }: Props) {
   const [showDeletePromptConfirm, setShowDeletePromptConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [availableTags, setAvailableTags] = useState<Array<{name: string, color: string}>>([]);
+  const [templateValues, setTemplateValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchPrompt = async () => {
@@ -190,6 +193,46 @@ export default function PromptDetail({ params }: Props) {
     fetchTags();
   }, []);
 
+  // Template-related calculations - MUST be before early returns (Rules of Hooks)
+  const isTemplate = prompt ? (prompt.isTemplate || hasVariables(prompt.promptText)) : false;
+  const variables = useMemo(() => {
+    if (!prompt) return [];
+    if (prompt.templateVars && prompt.templateVars.length > 0) {
+      return prompt.templateVars;
+    }
+    return extractVariables(prompt.promptText);
+  }, [prompt?.templateVars, prompt?.promptText]);
+  
+  const renderedPrompt = useMemo(() => {
+    if (!prompt) return '';
+    if (isTemplate) {
+      return renderPrompt(prompt.promptText, templateValues);
+    }
+    return prompt.promptText;
+  }, [prompt?.promptText, templateValues, isTemplate]);
+
+  const isComplete = prompt ? (isTemplate ? isTemplateComplete(prompt.promptText, templateValues) : true) : true;
+  const missingVariables = prompt && isTemplate ? getMissingVariables(prompt.promptText, templateValues) : [];
+
+  // Create a stable key for variables to track changes
+  const variablesKey = useMemo(() => JSON.stringify([...variables].sort()), [variables]);
+
+  // Initialize template values when prompt changes
+  useEffect(() => {
+    if (prompt && isTemplate && variables.length > 0) {
+      setTemplateValues(prev => {
+        const newValues: Record<string, string> = {};
+        variables.forEach(variable => {
+          // Preserve existing values if variable still exists, otherwise initialize empty
+          newValues[variable] = prev[variable] || '';
+        });
+        return newValues;
+      });
+    } else {
+      setTemplateValues({});
+    }
+  }, [prompt?.id, isTemplate, variablesKey]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -204,6 +247,15 @@ export default function PromptDetail({ params }: Props) {
   if (!prompt) {
     notFound();
   }
+
+  const handleTemplateValueChange = (variable: string, value: string) => {
+    setTemplateValues(prev => ({ ...prev, [variable]: value }));
+  };
+
+  const handleCopyRendered = () => {
+    navigator.clipboard.writeText(renderedPrompt);
+    toast.success('Rendered prompt copied to clipboard!');
+  };
 
 
   return (
@@ -272,13 +324,24 @@ export default function PromptDetail({ params }: Props) {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-                <CopyButton
-                  text={prompt.promptText}
-                  className="bg-teal-500 hover:bg-teal-600 text-white"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Prompt
-                </CopyButton>
+                {isTemplate ? (
+                  <Button
+                    onClick={handleCopyRendered}
+                    className="bg-teal-500 hover:bg-teal-600 text-white"
+                    disabled={!isComplete}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Rendered
+                  </Button>
+                ) : (
+                  <CopyButton
+                    text={prompt.promptText}
+                    className="bg-teal-500 hover:bg-teal-600 text-white"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Prompt
+                  </CopyButton>
+                )}
                 <Button
                   onClick={handleDeletePrompt}
                   className="bg-red-500 hover:bg-red-600 text-white"
@@ -292,16 +355,98 @@ export default function PromptDetail({ params }: Props) {
           
           <CardContent>
             <div className="space-y-4">
+              {/* Template Text Section */}
               <div>
                 <h3 className="text-lg font-semibold text-black mb-2">
-                  Prompt Text
+                  Template Text
+                  {isTemplate && (
+                    <span className="ml-2 text-sm text-blue-600 font-normal">
+                      ({variables.length} variable{variables.length !== 1 ? 's' : ''})
+                    </span>
+                  )}
                 </h3>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
                     {prompt.promptText}
                   </pre>
                 </div>
+                {isTemplate && variables.length > 0 && (
+                  <p className="mt-2 text-sm text-blue-600">
+                    Variables: {variables.join(', ')}
+                  </p>
+                )}
               </div>
+
+              {/* Template Variables Section - Only show for templates */}
+              {isTemplate && variables.length > 0 && (
+                <div className="space-y-3 border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-black">
+                      Template Variables
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm">
+                      {isComplete ? (
+                        <span className="text-green-600">✓ Complete</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          Missing: {missingVariables.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {variables.map(variable => (
+                      <div key={variable}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {variable}
+                        </label>
+                        <Input
+                          value={templateValues[variable] || ''}
+                          onChange={(e) => handleTemplateValueChange(variable, e.target.value)}
+                          placeholder={`Enter ${variable}`}
+                          className="border-gray-300 focus:border-teal-500 focus:ring-teal-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rendered Preview Section - Only show for templates */}
+              {isTemplate && (
+                <div className="space-y-2 border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-black">
+                      Rendered Preview
+                    </h3>
+                    <Button
+                      onClick={handleCopyRendered}
+                      size="sm"
+                      variant="outline"
+                      disabled={!isComplete}
+                      className="border-gray-300"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[100px]">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
+                      {renderedPrompt}
+                    </pre>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    {isComplete ? (
+                      <span className="text-green-600">✓ Ready to use</span>
+                    ) : (
+                      <span className="text-orange-600">Fill in all variables to see the rendered result</span>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {prompt.usageNotes && (
                 <div>

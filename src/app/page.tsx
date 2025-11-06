@@ -423,34 +423,53 @@ export default function Home() {
           onToggleFavorite={handleToggleFavorite}
         />
 
-        {/* All Prompts Section */}
+        {/* Matched Prompts Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-black mb-6">All Prompts</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {regularPrompts.map((prompt) => (
-                      <PromptCard
-                        key={prompt.id}
-                        prompt={prompt}
-                        onCopy={handleCopy}
-                        onToggleFavorite={handleToggleFavorite}
-                        onDeleteTag={handleDeleteTag}
-                        availableTags={tags}
-                      />
-                    ))}
-          </div>
-          
-          {regularPrompts.length === 0 && filteredPrompts.length > 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No regular prompts found matching your criteria.
-            </div>
-          )}
+          {(() => {
+            const hasActiveFilters = searchQuery.trim().length > 0 || selectedTags.length > 0;
+            const sectionTitle = hasActiveFilters 
+              ? `Matched Prompts (${regularPrompts.length})` 
+              : `All Prompts (${regularPrompts.length})`;
+            
+            return (
+              <>
+                <h2 className="text-2xl font-bold text-black mb-6">{sectionTitle}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {regularPrompts.map((prompt) => (
+                    <PromptCard
+                      key={prompt.id}
+                      prompt={prompt}
+                      onCopy={handleCopy}
+                      onToggleFavorite={handleToggleFavorite}
+                      onDeleteTag={handleDeleteTag}
+                      availableTags={tags}
+                    />
+                  ))}
+                </div>
+                
+                {regularPrompts.length === 0 && filteredPrompts.length > 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No regular prompts found matching your criteria.
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Templates Section */}
         {templates.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-black mb-6">Templates</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {(() => {
+              const hasActiveFilters = searchQuery.trim().length > 0 || selectedTags.length > 0;
+              const sectionTitle = hasActiveFilters 
+                ? `Matched Templates (${templates.length})` 
+                : `Templates (${templates.length})`;
+              
+              return (
+                <>
+                  <h2 className="text-2xl font-bold text-black mb-6">{sectionTitle}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {templates.map((template) => (
                       <PromptCard
                         key={template.id}
@@ -461,7 +480,10 @@ export default function Home() {
                         availableTags={tags}
                       />
                     ))}
-            </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 

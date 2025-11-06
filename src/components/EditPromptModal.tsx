@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,9 +51,17 @@ export default function EditPromptModal({
   const [templateValues, setTemplateValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Extract variables from prompt text
-  const variables = extractVariables(formData.promptText);
-  const isTemplate = hasVariables(formData.promptText);
+  // Extract variables from prompt text - memoized to prevent infinite loops
+  const variables = useMemo(() => extractVariables(formData.promptText), [formData.promptText]);
+  // Preserve original template status or detect from variables
+  const isTemplate = useMemo(() => {
+    // If the original prompt was a template, preserve that status
+    if (prompt.isTemplate) {
+      return true;
+    }
+    // Otherwise, detect from variables
+    return hasVariables(formData.promptText);
+  }, [prompt.isTemplate, formData.promptText]);
 
   // Reset form when prompt changes
   useEffect(() => {
@@ -68,17 +76,27 @@ export default function EditPromptModal({
   }, [prompt]);
 
   // Update template values when variables change
+  // Use JSON.stringify to create a stable dependency since variables array changes reference on every render
+  const variablesKey = useMemo(() => JSON.stringify([...variables].sort()), [variables]);
+  
   useEffect(() => {
-    if (isTemplate) {
-      const newValues: Record<string, string> = {};
-      variables.forEach(variable => {
-        if (!(variable in templateValues)) {
-          newValues[variable] = '';
-        }
+    if (isTemplate && variables.length > 0) {
+      setTemplateValues(prev => {
+        const newValues: Record<string, string> = {};
+        let hasNewVariables = false;
+        
+        variables.forEach(variable => {
+          if (!(variable in prev)) {
+            newValues[variable] = '';
+            hasNewVariables = true;
+          }
+        });
+        
+        // Only update state if there are actually new variables
+        return hasNewVariables ? { ...prev, ...newValues } : prev;
       });
-      setTemplateValues(prev => ({ ...prev, ...newValues }));
     }
-  }, [variables, isTemplate]);
+  }, [variablesKey, isTemplate]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -131,7 +149,8 @@ export default function EditPromptModal({
     const updatedPrompt = {
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
-      promptText: isTemplate ? renderPrompt(formData.promptText, templateValues) : formData.promptText,
+      // For templates, preserve the template text (with variables), don't render it
+      promptText: formData.promptText,
       tags: selectedTags,
       isTemplate: isTemplate,
       templateVars: isTemplate ? variables : undefined
