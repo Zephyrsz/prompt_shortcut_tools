@@ -131,9 +131,8 @@ export default function EditPromptModal({
       newErrors.promptText = 'Prompt text is required';
     }
 
-    if (isTemplate && !Object.values(templateValues).every(value => value.trim())) {
-      newErrors.templateValues = 'All template variables must have values';
-    }
+    // Note: We don't require template variable values when editing
+    // Variable values are only needed for preview/rendering, not for saving the template definition
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
