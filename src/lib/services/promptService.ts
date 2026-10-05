@@ -128,7 +128,7 @@ export const promptService = {
 
   async removeTag(id: number, tag: string) {
     const prompt = await this.getPrompt(id);
-    const currentTags = prompt.tags;
+    const currentTags = prompt.tags as string[];
     const updatedTags = currentTags.filter((t) => t !== tag);
 
     return promptRepository.update(id, {
@@ -144,4 +144,3 @@ export const promptService = {
     return promptRepository.search(query.trim());
   },
 };
-

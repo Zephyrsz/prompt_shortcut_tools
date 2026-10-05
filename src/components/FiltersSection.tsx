@@ -21,7 +21,7 @@ interface FiltersSectionProps {
   onToggleMode: () => void;
   totalPrompts: number;
   tags: Tag[];
-  onAddTag: (tag: Tag) => void;
+  onAddTag: (tag: Omit<Tag, 'id'>) => void;
 }
 
 export default function FiltersSection({
@@ -36,7 +36,7 @@ export default function FiltersSection({
 }: FiltersSectionProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const handleAddTag = (tag: Tag) => {
+  const handleAddTag = (tag: Omit<Tag, 'id'>) => {
     onAddTag(tag);
     setIsAddModalOpen(false);
   };

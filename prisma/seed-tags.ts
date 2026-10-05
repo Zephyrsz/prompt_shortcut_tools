@@ -38,14 +38,11 @@ async function main() {
   }
 
   console.log('Tag seeding completed!');
+  await prisma.$disconnect();
 }
 
 main()
   .catch((e) => {
     console.error('Error during seeding:', e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
-

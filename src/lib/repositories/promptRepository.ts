@@ -1,184 +1,170 @@
-// Pure data access layer - only Prisma queries, no business logic
-import { prisma } from '../prisma';
-import { CreatePromptInput, UpdatePromptInput, PromptFilters } from '@/types';
+import { CreatePromptInput, PromptFilters, UpdatePromptInput } from '@/types';
+import { getD1Database } from '../d1/database';
+
+type PromptRow = {
+  id: number;
+  title: string;
+  description: string | null;
+  promptText: string;
+  tags: string;
+  usageNotes: string | null;
+  isFavorite: boolean | number;
+  isTemplate: boolean | number;
+  templateVars: string | null;
+  createdAt: string | number;
+  updatedAt: string | number;
+};
+
+function parsePrompt(row: PromptRow) {
+  return {
+    ...row,
+    tags: JSON.parse(row.tags) as string[],
+    templateVars: row.templateVars ? (JSON.parse(row.templateVars) as string[]) : null,
+    isFavorite: Boolean(row.isFavorite),
+    isTemplate: Boolean(row.isTemplate),
+  };
+}
+
+function tagPattern(tag: string): string {
+  return `%"${tag.replaceAll('"', '""')}"%`;
+}
 
 export const promptRepository = {
   async findById(id: number) {
-    const prompt = await prisma.prompt.findUnique({
-      where: { id },
-    });
+    const db = await getD1Database();
+    const row = await db
+      .prepare('SELECT * FROM "Prompt" WHERE "id" = ?')
+      .bind(id)
+      .first<PromptRow>();
 
-    if (!prompt) {
-      return null;
-    }
-
-    // Parse JSON strings to arrays
-    return {
-      ...prompt,
-      tags: JSON.parse(prompt.tags),
-      templateVars: prompt.templateVars ? JSON.parse(prompt.templateVars) : null,
-    };
+    return row ? parsePrompt(row) : null;
   },
 
   async findAll(filters?: PromptFilters) {
-    const where: any = {};
+    const db = await getD1Database();
+    const conditions: string[] = [];
+    const bindings: Array<string | number> = [];
 
-    // Search filter
     if (filters?.query) {
-      where.OR = [
-        { title: { contains: filters.query } },
-        { description: { contains: filters.query } },
-        { promptText: { contains: filters.query } },
-      ];
+      conditions.push('("title" LIKE ? OR "description" LIKE ? OR "promptText" LIKE ?)');
+      const pattern = `%${filters.query}%`;
+      bindings.push(pattern, pattern, pattern);
     }
 
-    // Tags filter - need to check JSON string contains tag
-    if (filters?.tags && filters.tags.length > 0) {
-      // For SQLite, we need to check if JSON string contains the tag
-      // This is a simplified approach - in production, you might want more sophisticated matching
-      where.AND = filters.tags.map((tag) => ({
-        tags: {
-          contains: JSON.stringify(tag),
-        },
-      }));
+    for (const tag of filters?.tags ?? []) {
+      conditions.push('"tags" LIKE ?');
+      bindings.push(tagPattern(tag));
     }
 
-    // Favorite filter
     if (filters?.isFavorite !== undefined) {
-      where.isFavorite = filters.isFavorite;
+      conditions.push('"isFavorite" = ?');
+      bindings.push(filters.isFavorite ? 1 : 0);
     }
 
-    // Template filter
     if (filters?.isTemplate !== undefined) {
-      where.isTemplate = filters.isTemplate;
+      conditions.push('"isTemplate" = ?');
+      bindings.push(filters.isTemplate ? 1 : 0);
     }
 
-    const prompts = await prisma.prompt.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const sql = `SELECT * FROM "Prompt"${conditions.length ? ` WHERE ${conditions.join(' AND ')}` : ''} ORDER BY "createdAt" DESC`;
+    const statement = db.prepare(sql);
+    const result = bindings.length
+      ? await statement.bind(...bindings).all<PromptRow>()
+      : await statement.all<PromptRow>();
 
-    // Parse JSON strings to arrays
-    return prompts.map((prompt) => ({
-      ...prompt,
-      tags: JSON.parse(prompt.tags),
-      templateVars: prompt.templateVars ? JSON.parse(prompt.templateVars) : null,
-    }));
+    return result.results.map(parsePrompt);
   },
 
   async create(data: CreatePromptInput) {
-    // Convert tags to JSON string
-    let tagsString = '[]';
-    if (data.tags) {
-      if (Array.isArray(data.tags)) {
-        tagsString = JSON.stringify(data.tags);
-      } else if (typeof data.tags === 'string') {
-        tagsString = data.tags;
-      }
-    }
+    const db = await getD1Database();
+    const now = Date.now();
+    const row = await db
+      .prepare(
+        'INSERT INTO "Prompt" ("title", "description", "promptText", "tags", "usageNotes", "isFavorite", "isTemplate", "templateVars", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *',
+      )
+      .bind(
+        data.title,
+        data.description ?? null,
+        data.promptText,
+        Array.isArray(data.tags) ? JSON.stringify(data.tags) : data.tags ?? '[]',
+        data.usageNotes ?? null,
+        data.isFavorite ? 1 : 0,
+        data.isTemplate ? 1 : 0,
+        Array.isArray(data.templateVars) ? JSON.stringify(data.templateVars) : data.templateVars ?? null,
+        now,
+        now,
+      )
+      .first<PromptRow>();
 
-    // Convert templateVars to JSON string
-    let templateVarsString = null;
-    if (data.templateVars) {
-      if (Array.isArray(data.templateVars)) {
-        templateVarsString = JSON.stringify(data.templateVars);
-      } else if (typeof data.templateVars === 'string') {
-        templateVarsString = data.templateVars;
-      }
-    }
-
-    const prompt = await prisma.prompt.create({
-      data: {
-        title: data.title,
-        description: data.description || null,
-        promptText: data.promptText,
-        tags: tagsString,
-        usageNotes: data.usageNotes || null,
-        isFavorite: data.isFavorite || false,
-        isTemplate: data.isTemplate || false,
-        templateVars: templateVarsString,
-      },
-    });
-
-    // Parse JSON strings to arrays
-    return {
-      ...prompt,
-      tags: JSON.parse(prompt.tags),
-      templateVars: prompt.templateVars ? JSON.parse(prompt.templateVars) : null,
-    };
+    if (!row) throw new Error('Failed to create prompt');
+    return parsePrompt(row);
   },
 
   async update(id: number, data: UpdatePromptInput) {
-    const updateData: any = {};
+    const db = await getD1Database();
+    const updates: string[] = [];
+    const bindings: Array<string | number | null> = [];
 
-    if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.promptText !== undefined) updateData.promptText = data.promptText;
-    if (data.usageNotes !== undefined) updateData.usageNotes = data.usageNotes;
-    if (data.isFavorite !== undefined) updateData.isFavorite = data.isFavorite;
-    if (data.isTemplate !== undefined) updateData.isTemplate = data.isTemplate;
-
-    // Handle tags
+    if (data.title !== undefined) {
+      updates.push('"title" = ?');
+      bindings.push(data.title);
+    }
+    if (data.description !== undefined) {
+      updates.push('"description" = ?');
+      bindings.push(data.description);
+    }
+    if (data.promptText !== undefined) {
+      updates.push('"promptText" = ?');
+      bindings.push(data.promptText);
+    }
+    if (data.usageNotes !== undefined) {
+      updates.push('"usageNotes" = ?');
+      bindings.push(data.usageNotes);
+    }
+    if (data.isFavorite !== undefined) {
+      updates.push('"isFavorite" = ?');
+      bindings.push(data.isFavorite ? 1 : 0);
+    }
+    if (data.isTemplate !== undefined) {
+      updates.push('"isTemplate" = ?');
+      bindings.push(data.isTemplate ? 1 : 0);
+    }
     if (data.tags !== undefined) {
-      if (Array.isArray(data.tags)) {
-        updateData.tags = JSON.stringify(data.tags);
-      } else if (typeof data.tags === 'string') {
-        updateData.tags = data.tags;
-      }
+      updates.push('"tags" = ?');
+      bindings.push(Array.isArray(data.tags) ? JSON.stringify(data.tags) : data.tags);
     }
-
-    // Handle templateVars
     if (data.templateVars !== undefined) {
-      if (Array.isArray(data.templateVars)) {
-        updateData.templateVars = JSON.stringify(data.templateVars);
-      } else if (typeof data.templateVars === 'string') {
-        updateData.templateVars = data.templateVars;
-      } else if (data.templateVars === null) {
-        updateData.templateVars = null;
-      }
+      updates.push('"templateVars" = ?');
+      bindings.push(
+        data.templateVars === null
+          ? null
+          : Array.isArray(data.templateVars)
+            ? JSON.stringify(data.templateVars)
+            : data.templateVars,
+      );
     }
 
-    const prompt = await prisma.prompt.update({
-      where: { id },
-      data: updateData,
-    });
+    if (updates.length === 0) return this.findById(id);
 
-    // Parse JSON strings to arrays
-    return {
-      ...prompt,
-      tags: JSON.parse(prompt.tags),
-      templateVars: prompt.templateVars ? JSON.parse(prompt.templateVars) : null,
-    };
+    updates.push('"updatedAt" = ?');
+    bindings.push(Date.now());
+    bindings.push(id);
+
+    const row = await db
+      .prepare(`UPDATE "Prompt" SET ${updates.join(', ')} WHERE "id" = ? RETURNING *`)
+      .bind(...bindings)
+      .first<PromptRow>();
+
+    if (!row) return null;
+    return parsePrompt(row);
   },
 
   async delete(id: number) {
-    return prisma.prompt.delete({
-      where: { id },
-    });
+    const db = await getD1Database();
+    return db.prepare('DELETE FROM "Prompt" WHERE "id" = ?').bind(id).run();
   },
 
   async search(query: string) {
-    const prompts = await prisma.prompt.findMany({
-      where: {
-        OR: [
-          { title: { contains: query } },
-          { description: { contains: query } },
-          { promptText: { contains: query } },
-        ],
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    // Parse JSON strings to arrays
-    return prompts.map((prompt) => ({
-      ...prompt,
-      tags: JSON.parse(prompt.tags),
-      templateVars: prompt.templateVars ? JSON.parse(prompt.templateVars) : null,
-    }));
+    return this.findAll({ query });
   },
 };
-

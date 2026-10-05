@@ -218,7 +218,7 @@ export default function Home() {
   };
 
   // Handle adding new tag (persist via API; fallback to local-only)
-  const handleAddTag = async (tag: Tag) => {
+  const handleAddTag = async (tag: Omit<Tag, 'id'>) => {
     try {
       const res = await fetch('/api/tags', {
         method: 'POST',
@@ -233,7 +233,7 @@ export default function Home() {
       toast.success(`Tag "${tag.name}" added successfully!`);
     } catch (e) {
       // Still reflect in UI, but warn it's not persisted
-      setTags(prev => [...prev, tag]);
+      setTags(prev => [...prev, { ...tag, id: -Date.now() }]);
       toast.warning(`Tag "${tag.name}" added locally. Persistence failed; please check API/DB.`);
     }
   };

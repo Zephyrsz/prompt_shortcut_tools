@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: 'Validation failed', 
-        details: error.errors 
+        details: error.issues
       }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to create prompt' }, { status: 500 });
@@ -107,4 +107,3 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete prompt' }, { status: 500 });
   }
 }
-

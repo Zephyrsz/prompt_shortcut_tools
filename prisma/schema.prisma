@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
@@ -31,4 +32,3 @@ model Tag {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-

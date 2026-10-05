@@ -176,14 +176,11 @@ async function main() {
   }
 
   console.log(`Seeded ${prompts.length} prompts successfully!`);
+  await prisma.$disconnect();
 }
 
 main()
   .catch((e) => {
     console.error(e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
-

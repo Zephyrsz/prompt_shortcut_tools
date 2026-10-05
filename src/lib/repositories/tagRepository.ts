@@ -1,53 +1,57 @@
-// Pure data access layer - only Prisma queries, no business logic
-import { prisma } from '../prisma';
 import { CreateTagInput } from '@/types';
+import { getD1Database } from '../d1/database';
+
+type TagRow = {
+  id: number;
+  name: string;
+  color: string;
+  createdAt: string | number;
+  updatedAt: string | number;
+};
+
+function tagPattern(tagName: string): string {
+  return `%"${tagName.replaceAll('"', '""')}"%`;
+}
 
 export const tagRepository = {
   async findById(id: number) {
-    return prisma.tag.findUnique({
-      where: { id },
-    });
+    const db = await getD1Database();
+    return db.prepare('SELECT * FROM "Tag" WHERE "id" = ?').bind(id).first<TagRow>();
   },
 
   async findByName(name: string) {
-    return prisma.tag.findUnique({
-      where: { name },
-    });
+    const db = await getD1Database();
+    return db.prepare('SELECT * FROM "Tag" WHERE "name" = ?').bind(name).first<TagRow>();
   },
 
   async findAll() {
-    return prisma.tag.findMany({
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const db = await getD1Database();
+    const result = await db.prepare('SELECT * FROM "Tag" ORDER BY "name" ASC').all<TagRow>();
+    return result.results;
   },
 
   async create(data: CreateTagInput) {
-    return prisma.tag.create({
-      data,
-    });
+    const db = await getD1Database();
+    const now = Date.now();
+    return db
+      .prepare(
+        'INSERT INTO "Tag" ("name", "color", "createdAt", "updatedAt") VALUES (?, ?, ?, ?) RETURNING *',
+      )
+      .bind(data.name, data.color, now, now)
+      .first<TagRow>();
   },
 
   async delete(id: number) {
-    return prisma.tag.delete({
-      where: { id },
-    });
+    const db = await getD1Database();
+    return db.prepare('DELETE FROM "Tag" WHERE "id" = ?').bind(id).run();
   },
 
   async findPromptsUsingTag(tagName: string) {
-    // Find all prompts that contain this tag in their tags JSON string
-    // Tags are stored as JSON array like ["tag1", "tag2"]
-    // We need to search for the tag name within the JSON array
-    // Use contains with the tag name in quotes (as it appears in JSON)
-    const searchPattern = `"${tagName}"`;
-    return prisma.prompt.findMany({
-      where: {
-        tags: {
-          contains: searchPattern,
-        },
-      },
-    });
+    const db = await getD1Database();
+    const result = await db
+      .prepare('SELECT * FROM "Prompt" WHERE "tags" LIKE ?')
+      .bind(tagPattern(tagName))
+      .all();
+    return result.results;
   },
 };
-

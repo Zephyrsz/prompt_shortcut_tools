@@ -27,6 +27,8 @@ interface Prompt {
   promptText: string;
   tags: string[];
   isFavorite: boolean;
+  isTemplate?: boolean;
+  templateVars?: string[] | null;
 }
 
 interface PromptFormData {

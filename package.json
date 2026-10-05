@@ -3,23 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "tsx prisma/seed.ts"
+    "test": "tsx --test tests/**/*.test.ts",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:export": "tsx scripts/export-sqlite-to-d1.ts",
+    "db:d1:migrate:local": "wrangler d1 migrations apply prompt-shortcut-tools-db --local",
+    "db:d1:migrate:remote": "wrangler d1 migrations apply prompt-shortcut-tools-db --remote",
+    "db:d1:import:local": "wrangler d1 execute prompt-shortcut-tools-db --local --file .tmp/d1-data.sql",
+    "db:d1:import:remote": "wrangler d1 execute prompt-shortcut-tools-db --remote --file .tmp/d1-data.sql",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@opennextjs/cloudflare": "^1.18.1",
     "@prisma/client": "^6.18.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.548.0",
-    "next": "16.0.0",
+    "next": "^16.0.11",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "sonner": "^2.0.7",
@@ -28,16 +38,17 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261005.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.0",
+    "eslint-config-next": "^16.0.11",
     "prisma": "^6.18.0",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.147.0"
   }
 }
-

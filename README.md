@@ -170,7 +170,10 @@ When adding new features:
 
 Follow the existing patterns - all services and repositories should be plain objects, not classes.
 
+## Cloudflare Deployment
+
+The production deployment uses Cloudflare Workers through OpenNext and Cloudflare D1 for persistence. Follow [CLOUDFLARE_DEPLOYMENT.md](./CLOUDFLARE_DEPLOYMENT.md) to create the D1 database, apply migrations, import the existing SQLite rows, preview locally, and deploy.
+
 ## License
 
 Same as the original project.
-
