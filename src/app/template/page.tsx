@@ -190,40 +190,40 @@ Please provide the SQL query and explain the logic.`);
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="app-shell">
+      <div className="app-container">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <header className="app-header">
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="app-button">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Prompts
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-black">Template Editor</h1>
-              <p className="text-gray-600">Create and test prompt templates with variables</p>
+              <h1 className="brand-title text-2xl">Template Editor</h1>
+              <p className="brand-subtitle">Create and test prompt templates with variables</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="header-actions">
             <Button
               onClick={handleSaveTemplate}
               variant="outline"
-              className="flex items-center gap-2"
+              className="app-button flex items-center gap-2"
             >
               <Save className="h-4 w-4" />
               Save Template
             </Button>
             <Button
               onClick={handleCopyRendered}
-              className="bg-teal-500 hover:bg-teal-600 text-white flex items-center gap-2"
+              className="app-button app-button--primary flex items-center gap-2"
             >
               <Copy className="h-4 w-4" />
               Copy Rendered
             </Button>
           </div>
-        </div>
+        </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Editor */}

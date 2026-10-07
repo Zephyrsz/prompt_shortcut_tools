@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ChatGPT Shortcut",
-  description: "让生产力加倍的ChatGPT 快捷指令",
+  title: "ChatGPT Shortcut · Prompt Workspace",
+  description: "集中管理、检索并复用你的高价值 AI 提示词。",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

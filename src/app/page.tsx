@@ -370,24 +370,24 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading prompts...</p>
+      <div className="app-loading">
+        <div className="app-loading__inner">
+          <div className="app-loading__spinner" aria-hidden="true"></div>
+          <p>Loading prompts...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+    <div className="app-shell">
+      <div className="app-container">
+        <header className="app-header">
           <Header />
-          <div className="flex gap-3">
+          <div className="header-actions">
             <Link href="/template">
               <Button
-                className="bg-teal-500 hover:bg-teal-600 text-white flex items-center gap-2"
+                className="app-button app-button--primary flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
                 Add New Template
@@ -395,15 +395,17 @@ export default function Home() {
             </Link>
             <Button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-teal-500 hover:bg-teal-600 text-white flex items-center gap-2"
+              className="app-button app-button--primary flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               Add New Prompt
             </Button>
           </div>
-        </div>
-        
+        </header>
+
         <FiltersSection
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           selectedTags={selectedTags}
           onTagToggle={handleTagToggle}
           onDeleteTag={handleDeleteTagFromFilter}
@@ -416,15 +418,13 @@ export default function Home() {
         
 
         <FavoritesSection
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
           favoritePrompts={favoritePrompts}
           onCopy={handleCopy}
           onToggleFavorite={handleToggleFavorite}
         />
 
         {/* Matched Prompts Section */}
-        <div className="mb-8">
+        <section className="surface-panel" aria-labelledby="prompts-title">
           {(() => {
             const hasActiveFilters = searchQuery.trim().length > 0 || selectedTags.length > 0;
             const sectionTitle = hasActiveFilters 
@@ -433,8 +433,11 @@ export default function Home() {
             
             return (
               <>
-                <h2 className="text-2xl font-bold text-black mb-6">{sectionTitle}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="section-heading">
+                  <h2 id="prompts-title" className="section-title">{sectionTitle}</h2>
+                  <span className="section-kicker">Reusable prompt library</span>
+                </div>
+                <div className="prompt-grid">
                   {regularPrompts.map((prompt) => (
                     <PromptCard
                       key={prompt.id}
@@ -448,28 +451,31 @@ export default function Home() {
                 </div>
                 
                 {regularPrompts.length === 0 && filteredPrompts.length > 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="empty-state">
                     No regular prompts found matching your criteria.
                   </div>
                 )}
               </>
             );
           })()}
-        </div>
+        </section>
 
         {/* Templates Section */}
         {templates.length > 0 && (
-          <div className="mb-8">
+          <section className="surface-panel" aria-labelledby="templates-title">
             {(() => {
               const hasActiveFilters = searchQuery.trim().length > 0 || selectedTags.length > 0;
               const sectionTitle = hasActiveFilters 
                 ? `Matched Templates (${templates.length})` 
                 : `Templates (${templates.length})`;
               
-              return (
-                <>
-                  <h2 className="text-2xl font-bold text-black mb-6">{sectionTitle}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            return (
+              <>
+                  <div className="section-heading">
+                    <h2 id="templates-title" className="section-title">{sectionTitle}</h2>
+                    <span className="section-kicker">Variable-ready prompts</span>
+                  </div>
+                  <div className="prompt-grid">
                     {templates.map((template) => (
                       <PromptCard
                         key={template.id}
@@ -484,12 +490,12 @@ export default function Home() {
                 </>
               );
             })()}
-          </div>
+          </section>
         )}
 
         {/* No results message */}
         {filteredPrompts.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="surface-panel empty-state">
             No prompts found matching your criteria.
           </div>
         )}

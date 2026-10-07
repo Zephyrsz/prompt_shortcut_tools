@@ -2,10 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Heart, Copy, FileText, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Prompt {
   id: number;
@@ -31,17 +30,9 @@ interface PromptCardProps {
   availableTags?: Tag[];
 }
 
-export default function PromptCard({ prompt, onCopy, onToggleFavorite, onDeleteTag, availableTags = [] }: PromptCardProps) {
+export default function PromptCard({ prompt, onCopy, onToggleFavorite, onDeleteTag }: PromptCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string>('');
-
-  // Get the color for the first tag
-  const getTagColor = (tagName: string) => {
-    const tag = availableTags.find(t => t.name === tagName);
-    return tag?.color || 'bg-gray-500';
-  };
-
-  const firstTagColor = prompt.tags.length > 0 ? getTagColor(prompt.tags[0]) : 'bg-gray-500';
 
   // Handle tag delete with confirmation
   const handleDeleteTag = (tag: string) => {
@@ -64,93 +55,80 @@ export default function PromptCard({ prompt, onCopy, onToggleFavorite, onDeleteT
 
   return (
     <>
-    <Card className="bg-gray-50 border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-      {/* Title Section - Fixed Height */}
-      <CardHeader className={`pb-3 flex-shrink-0 ${prompt.isTemplate ? 'h-[88px]' : 'h-[64px]'}`}>
-        {/* Template badge at top-left */}
-        {prompt.isTemplate && (
-          <div className="mb-2 h-[24px]">
-            <Badge variant="outline" className="text-xs px-2 py-1 bg-blue-50 text-blue-700 border-blue-200">
-              <FileText className="h-3 w-3 mr-1" />
-              Template
-            </Badge>
+    <Card className="prompt-card">
+      <CardHeader className="prompt-card__header">
+        <div className="prompt-card__meta">
+          <div className={`prompt-card__type ${prompt.isTemplate ? '' : 'prompt-card__type--placeholder'}`}>
+            <FileText aria-hidden="true" />
+            Template
           </div>
-        )}
-        
-        <div className="flex items-start justify-between h-[40px]">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Link href={`/prompt/${prompt.id}`}>
-              <CardTitle className="text-lg font-semibold text-black hover:text-teal-600 cursor-pointer truncate">
-                {prompt.title}
-              </CardTitle>
-            </Link>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {prompt.isTemplate && prompt.templateVars && prompt.templateVars.length > 0 && (
+            <span className="text-[0.68rem] font-semibold text-slate-400">
+              {prompt.templateVars.length} variable{prompt.templateVars.length === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
+
+        <div className="prompt-card__title-row">
+          <Link href={`/prompt/${prompt.id}`} className="prompt-card__title-link">
+            <CardTitle className="prompt-card__title">{prompt.title}</CardTitle>
+          </Link>
+          <div className="prompt-card__actions">
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              className="p-1 h-8 w-8"
+              className="prompt-card__action prompt-card__action--favorite"
+              data-active={prompt.isFavorite}
               onClick={() => onToggleFavorite(prompt.id)}
+              aria-label={prompt.isFavorite ? `Remove ${prompt.title} from favorites` : `Add ${prompt.title} to favorites`}
+              title={prompt.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
-              <Heart 
-                className={`h-4 w-4 ${
-                  prompt.isFavorite ? 'fill-pink-500 text-pink-500' : 'text-gray-400'
-                }`} 
-              />
+              <Heart aria-hidden="true" fill={prompt.isFavorite ? 'currentColor' : 'none'} />
             </Button>
             <Button
-              variant="secondary"
+              type="button"
+              variant="ghost"
               size="sm"
-              className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+              className="prompt-card__copy"
               onClick={() => onCopy(prompt.promptText)}
+              aria-label={`Copy ${prompt.title}`}
             >
-              <Copy className="h-3 w-3 mr-1" />
+              <Copy aria-hidden="true" />
               复制
             </Button>
           </div>
         </div>
       </CardHeader>
-      
-      <CardContent className="pt-0 flex flex-col flex-1 min-h-0">
-        {/* Description Section - Fixed Height */}
-        <div className="flex items-start gap-2 mb-3 h-[48px] flex-shrink-0">
-          {!prompt.isTemplate && prompt.tags.length > 0 && (
-            <div className={`w-4 h-4 ${firstTagColor} rounded-full flex-shrink-0 mt-0.5`} />
-          )}
-          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 flex-1">
-            {prompt.description || '\u00A0'}
-          </p>
+
+      <CardContent className="prompt-card__body">
+        <p className={`prompt-card__description ${prompt.description ? '' : 'prompt-card__description--empty'}`}>
+          {prompt.description || 'Prompt description'}
+        </p>
+
+        <div className="prompt-card__content">
+          <p>{prompt.promptText}</p>
         </div>
-        
-        <div className="space-y-2 flex flex-col flex-1 min-h-0">
-          {/* Content Box - Fixed Height */}
-          <div className="bg-white p-3 rounded border border-gray-200 h-[180px] flex-shrink-0 overflow-hidden">
-            <p className="text-sm text-gray-800 leading-relaxed line-clamp-6 h-full overflow-hidden">
-              {prompt.promptText}
-            </p>
-          </div>
-          
-          {/* Tags Section - Fixed Height */}
-          <div className="flex flex-wrap gap-1 h-[32px] flex-shrink-0 items-center">
+
+        <div className="prompt-card__footer">
+          <div className="prompt-card__tags" aria-label="Prompt tags">
             {prompt.tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className="text-xs px-2 py-1 bg-white border-gray-300 text-gray-600 flex items-center gap-1 group"
-              >
+              <span key={tag} className="prompt-card__tag group">
                 {tag}
                 {onDeleteTag && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteTag(tag);
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+                    className="prompt-card__tag-remove"
+                    aria-label={`Remove ${tag} tag from ${prompt.title}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
                 )}
-              </Badge>
+              </span>
             ))}
           </div>
         </div>

@@ -235,10 +235,10 @@ export default function PromptDetail({ params }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading prompt...</p>
+      <div className="app-loading">
+        <div className="app-loading__inner">
+          <div className="app-loading__spinner" aria-hidden="true"></div>
+          <p>Loading prompt...</p>
         </div>
       </div>
     );
@@ -259,12 +259,12 @@ export default function PromptDetail({ params }: Props) {
 
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="app-shell">
+      <div className="app-container">
         {/* Back Button */}
         <div className="mb-6">
           <Link href="/">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="app-button flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Prompts
             </Button>
@@ -272,11 +272,11 @@ export default function PromptDetail({ params }: Props) {
         </div>
 
         {/* Prompt Detail Card */}
-        <Card className="max-w-4xl mx-auto">
+        <Card className="max-w-5xl mx-auto shadow-sm">
           <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col items-stretch justify-between gap-5 lg:flex-row lg:items-start">
               <div className="flex-1">
-                <CardTitle className="text-3xl font-bold text-black mb-2">
+                <CardTitle className="text-3xl font-bold text-slate-900 mb-2">
                   {prompt.title}
                 </CardTitle>
                 {prompt.description && (
@@ -305,21 +305,19 @@ export default function PromptDetail({ params }: Props) {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 lg:max-w-[460px] lg:justify-end">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="p-2"
+                  className="app-button prompt-card__action prompt-card__action--favorite"
+                  data-active={prompt.isFavorite}
+                  aria-label={prompt.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 >
-                  <Heart 
-                    className={`h-5 w-5 ${
-                      prompt.isFavorite ? 'fill-pink-500 text-pink-500' : 'text-gray-400'
-                    }`} 
-                  />
+                  <Heart fill={prompt.isFavorite ? 'currentColor' : 'none'} />
                 </Button>
                 <Button
                   onClick={handleEditPrompt}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="app-button app-button--primary"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -327,7 +325,7 @@ export default function PromptDetail({ params }: Props) {
                 {isTemplate ? (
                   <Button
                     onClick={handleCopyRendered}
-                    className="bg-teal-500 hover:bg-teal-600 text-white"
+                    className="app-button app-button--primary"
                     disabled={!isComplete}
                   >
                     <Copy className="h-4 w-4 mr-2" />
@@ -336,7 +334,7 @@ export default function PromptDetail({ params }: Props) {
                 ) : (
                   <CopyButton
                     text={prompt.promptText}
-                    className="bg-teal-500 hover:bg-teal-600 text-white"
+                    className="app-button app-button--primary"
                   >
                     <Copy className="h-4 w-4 mr-2" />
                     Copy Prompt
@@ -344,7 +342,7 @@ export default function PromptDetail({ params }: Props) {
                 )}
                 <Button
                   onClick={handleDeletePrompt}
-                  className="bg-red-500 hover:bg-red-600 text-white"
+                  className="app-button bg-rose-600 text-white hover:bg-rose-700"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Prompt

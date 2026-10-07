@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Toggle } from '@/components/ui/toggle';
-import { Button } from '@/components/ui/button';
-import { Plus, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import AddTagModal from './AddTagModal';
 
 interface Tag {
@@ -14,6 +13,8 @@ interface Tag {
 }
 
 interface FiltersSectionProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
   selectedTags: string[];
   onTagToggle: (tag: string) => void;
   onDeleteTag: (tag: string) => void;
@@ -25,6 +26,8 @@ interface FiltersSectionProps {
 }
 
 export default function FiltersSection({
+  searchQuery,
+  onSearchChange,
   selectedTags,
   onTagToggle,
   onDeleteTag,
@@ -42,47 +45,65 @@ export default function FiltersSection({
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold text-black">Filters</h2>
-          <span className="text-sm text-gray-600">{totalPrompts} prompts</span>
+    <section className="surface-panel filters-section" aria-labelledby="filters-title">
+      <div className="filters-panel__header">
+        <div className="filter-summary">
+          <h2 id="filters-title" className="filter-summary__title">Filters</h2>
+          <span className="filter-summary__count">{totalPrompts} prompts</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">OR</span>
+        <div className="search-box">
+          <Search aria-hidden="true" />
+          <Input
+            placeholder="Search prompts and templates..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            aria-label="Search prompts and templates"
+          />
+        </div>
+      </div>
+
+      <div className="filters-panel__toolbar">
+        <span className="filters-panel__label">Tags</span>
+        <div className="filter-mode">
+          <span className="filter-mode__label">MATCH</span>
+          <span aria-hidden="true">{isOrMode ? 'Any tag' : 'Every tag'}</span>
           <Toggle
             pressed={isOrMode}
             onPressedChange={onToggleMode}
-            className={`w-12 h-6 rounded-full transition-colors ${
-              isOrMode ? 'bg-teal-500' : 'bg-gray-300'
-            }`}
+            aria-label={`Match ${isOrMode ? 'any' : 'every'} selected tag`}
+            className="filter-mode__toggle"
           >
-            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
-              isOrMode ? 'translate-x-6' : 'translate-x-0'
-            }`} />
+            <span className="filter-mode__knob" data-active={isOrMode} />
           </Toggle>
         </div>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+      <div className="filter-pills">
         {tags.map((tag) => (
           <div
             key={tag.name}
-            className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-colors group ${
+            className={`filter-pill group ${
               selectedTags.includes(tag.name)
-                ? 'bg-teal-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'filter-pill--selected'
+                : ''
             }`}
-            onClick={() => onTagToggle(tag.name)}
           >
-            <div className={`w-2 h-2 rounded-full ${selectedTags.includes(tag.name) ? 'bg-white' : tag.color}`} />
-            <span className="flex-1">{tag.name}</span>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
+              type="button"
+              className="filter-pill__select"
+              onClick={() => onTagToggle(tag.name)}
+              aria-pressed={selectedTags.includes(tag.name)}
+            >
+              <span className={`filter-pill__dot ${selectedTags.includes(tag.name) ? 'bg-blue-500' : tag.color}`} aria-hidden="true" />
+              <span>{tag.name}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 onDeleteTag(tag.name);
               }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+              className="filter-pill__remove"
+              aria-label={`Delete ${tag.name} tag`}
             >
               <X className="h-3 w-3" />
             </button>
@@ -91,8 +112,9 @@ export default function FiltersSection({
         
         {/* Add New Tag Button */}
         <button
+          type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-dashed border-gray-300 hover:border-gray-400"
+          className="filter-pill filter-pill--add"
         >
           <Plus className="w-3 h-3" />
           Add Tag
@@ -105,6 +127,6 @@ export default function FiltersSection({
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAddTag}
       />
-    </div>
+    </section>
   );
 }
